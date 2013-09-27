@@ -60,6 +60,7 @@ public class Sendgrid {
     public Sendgrid setTo(String email) {
         this.to_list = new ArrayList<String>();
         this.to_list.add(email);
+        this.to_name_list.add("");
 
         return this;
     }
@@ -74,9 +75,9 @@ public class Sendgrid {
      */
     public Sendgrid addTo(String email, String name) {
         if (name.length() > 0){
-            this.to_name_list.add(name);
+            this.addToName(name);
         } else {
-            this.to_name_list.add("");
+            this.addToName("");
         }
 
         this.to_list.add(email);
@@ -175,10 +176,10 @@ public class Sendgrid {
      * @return         the SendGrid object.
      */
     public Sendgrid setBcc(String email) {
-      this.bcc_list = new ArrayList<String>();
-      this.bcc_list.add(email);
+        this.bcc_list = new ArrayList<String>();
+        this.bcc_list.add(email);
 
-      return this;
+        return this;
     }
 
     /**
@@ -533,7 +534,7 @@ public class Sendgrid {
             params.put("to", this.getTos().toString());
         }
 
-        if (this.getToNames() != null) {
+        if (this.getToNames().size() > 0) {
             params.put("toname", this.getToNames().toString());
         }
 
@@ -561,19 +562,19 @@ public class Sendgrid {
                 	requestParams.append(this._arrayToUrlPart(this.getToNames(), "toname")+"&");
                 } else {
 	                try {
-						requestParams.append(URLEncoder.encode(key, "UTF-8"));
-					} catch (UnsupportedEncodingException e) {
-						message = "UnsupportedEncodingException - " + e.getMessage();
+                        requestParams.append(URLEncoder.encode(key, "UTF-8"));
+                    } catch (UnsupportedEncodingException e) {
+                        message = "Unsupported Encoding Exception";
 					}
-	                requestParams.append("=");
+                    requestParams.append("=");
 	                try {
-						requestParams.append(URLEncoder.encode(value, "UTF-8"));
+                        requestParams.append(URLEncoder.encode(value, "UTF-8"));
 					} catch (UnsupportedEncodingException e) {
-						message = "UnsupportedEncodingException - " + e.getMessage();
+                        message = "Unsupported Encoding Exception";
 					}
-	                requestParams.append("&");
-                  }
-         }
+                    requestParams.append("&");
+                }
+            }
         }
         String request = this.domain + this.endpoint;
 
@@ -616,9 +617,9 @@ public class Sendgrid {
                 }
             }
         } catch (MalformedURLException e) {
-            message = "MalformedURLException - " + e.getMessage();
+            message = "Malformed URL Exception";
         } catch (IOException e) {
-            message = "IOException - " + e.getMessage();
+            message = "IO Exception";
         }
     }
 
