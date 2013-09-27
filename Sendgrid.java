@@ -561,17 +561,17 @@ public class Sendgrid {
             	if (key == "toname" && this.getToNames().size() > 0) {
                 	requestParams.append(this._arrayToUrlPart(this.getToNames(), "toname")+"&");
                 } else {
-	                try {
+	                  try {
                         requestParams.append(URLEncoder.encode(key, "UTF-8"));
                     } catch (UnsupportedEncodingException e) {
                         message = "Unsupported Encoding Exception";
-					}
+                    }
                     requestParams.append("=");
-	                try {
+	                  try {
                         requestParams.append(URLEncoder.encode(value, "UTF-8"));
-					} catch (UnsupportedEncodingException e) {
+                    } catch (UnsupportedEncodingException e) {
                         message = "Unsupported Encoding Exception";
-					}
+                    }
                     requestParams.append("&");
                 }
             }
