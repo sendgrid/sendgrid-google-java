@@ -74,13 +74,17 @@ public class Sendgrid {
      * @return           The SendGrid object.
      */
     public Sendgrid addTo(String email, String name) {
-        if (name.length() > 0){
-            this.addToName(name);
+        if (this._useHeaders() == true){
+            String toAddress = (name.length() > 0) ? name + "<" + email + ">" : email;
+            this.to_list.add(toAddress);
         } else {
-            this.addToName("");
+            if (name.length() > 0){
+              this.addToName(name);
+            } else {
+                this.addToName("");
+            }
+            this.to_list.add(email);
         }
-
-        this.to_list.add(email);
 
         return this;
     }
@@ -527,15 +531,15 @@ public class Sendgrid {
         if (this._useHeaders() == true) {
             JSONObject headers = this.getHeaders();
             params.put("to", this.getFrom());
-            headers.put("to", this.getTos().toString());
+            JSONArray tos_json = new JSONArray(this.getTos());
+            headers.put("to", tos_json);
             this.setHeaders(headers);
             params.put("x-smtpapi", this.getHeaders().toString());
         } else {
             params.put("to", this.getTos().toString());
-        }
-
-        if (this.getToNames().size() > 0) {
-            params.put("toname", this.getToNames().toString());
+            if (this.getToNames().size() > 0) {
+                params.put("toname", this.getToNames().toString());
+            }
         }
 
         return params;
@@ -555,8 +559,12 @@ public class Sendgrid {
         while (paramIterator.hasNext()) {
             String key = paramIterator.next();
             String value = data.get(key);
-            if (key == "to" && this.getTos().size() > 0) {
-                requestParams.append(this._arrayToUrlPart(this.getTos(), "to")+"&");
+            if (key == "to" && this.getTos().size() > 1) {
+                if (this._useHeaders() == true){
+                    requestParams.append("to=" + value + "&");
+                } else{
+                    requestParams.append(this._arrayToUrlPart(this.getTos(), "to")+"&");
+                }
             } else {
             	if (key == "toname" && this.getToNames().size() > 0) {
                 	requestParams.append(this._arrayToUrlPart(this.getToNames(), "toname")+"&");
