@@ -59,8 +59,7 @@ public class Sendgrid {
      */
     public Sendgrid setTo(String email) {
         this.to_list = new ArrayList<String>();
-        this.to_list.add(email);
-        this.to_name_list.add("");
+        this.addTo(email);
 
         return this;
     }
