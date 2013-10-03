@@ -27,15 +27,16 @@ public class Sendgrid {
     protected Boolean use_headers = true;
     public String message = "";
     private ArrayList<String> to_list  = new ArrayList<String>();
+    private ArrayList<String> to_name_list  = new ArrayList<String>();
     private ArrayList<String> bcc_list = new ArrayList<String>();
     private JSONObject header_list = new JSONObject();
 
-    protected String domain = "http://sendgrid.com/",
+    protected String domain = "https://sendgrid.com/",
                      endpoint= "api/mail.send.json",
                      username,
                      password;
 
-    Sendgrid(String username, String password) {
+    public Sendgrid(String username, String password) {
         this.username = username;
         this.password = password;
     }
@@ -58,7 +59,7 @@ public class Sendgrid {
      */
     public Sendgrid setTo(String email) {
         this.to_list = new ArrayList<String>();
-        this.to_list.add(email);
+        this.addTo(email);
 
         return this;
     }
@@ -72,8 +73,17 @@ public class Sendgrid {
      * @return           The SendGrid object.
      */
     public Sendgrid addTo(String email, String name) {
-        String toAddress = (name.length() > 0) ? name + "<" + email + ">" : email;
-        this.to_list.add(toAddress);
+        if (this._useHeaders() == true){
+            String toAddress = (name.length() > 0) ? name + "<" + email + ">" : email;
+            this.to_list.add(toAddress);
+        } else {
+            if (name.length() > 0){
+              this.addToName(name);
+            } else {
+                this.addToName("");
+            }
+            this.to_list.add(email);
+        }
 
         return this;
     }
@@ -86,6 +96,28 @@ public class Sendgrid {
      */
     public Sendgrid addTo(String email) {
         return addTo(email, "");
+    }
+
+    /**
+     * getTos - Return the list of names for recipients
+     *
+     * @return  List of names
+     */
+    public ArrayList<String> getToNames() {
+        return this.to_name_list;
+    }
+
+    /**
+     * addToName - Append an recipient name to the existing list of names
+     *
+     * @param    email   Recipient email address
+     * @param    name    Recipient name
+     * @return           The SendGrid object.
+     */
+    public Sendgrid addToName(String name) {
+        this.to_name_list.add(name);
+
+        return this;
     }
 
     /**
@@ -147,10 +179,10 @@ public class Sendgrid {
      * @return         the SendGrid object.
      */
     public Sendgrid setBcc(String email) {
-      this.bcc_list = new ArrayList<String>();
-      this.bcc_list.add(email);
+        this.bcc_list = new ArrayList<String>();
+        this.bcc_list.add(email);
 
-      return this;
+        return this;
     }
 
     /**
@@ -462,7 +494,6 @@ public class Sendgrid {
      */
     protected String _arrayToUrlPart(ArrayList<String> array, String token) {
         String string = "";
-
         for(int i = 0;i < array.size();i++)
         {
             try {
@@ -499,11 +530,15 @@ public class Sendgrid {
         if (this._useHeaders() == true) {
             JSONObject headers = this.getHeaders();
             params.put("to", this.getFrom());
-            headers.put("to", this.getTos());
+            JSONArray tos_json = new JSONArray(this.getTos());
+            headers.put("to", tos_json);
             this.setHeaders(headers);
             params.put("x-smtpapi", this.getHeaders().toString());
         } else {
             params.put("to", this.getTos().toString());
+            if (this.getToNames().size() > 0) {
+                params.put("toname", this.getToNames().toString());
+            }
         }
 
         return params;
@@ -512,10 +547,9 @@ public class Sendgrid {
     /**
      * send - Send an email
      *
-     * @throws IOException 
      * @throws JSONException 
      */
-    public void send() throws IOException, JSONException {
+    public void send() throws JSONException {
         Map<String,String> data = new HashMap<String, String>();
 
         data = this._prepMessageData();
@@ -524,13 +558,29 @@ public class Sendgrid {
         while (paramIterator.hasNext()) {
             String key = paramIterator.next();
             String value = data.get(key);
-            if (key == "to" && this.getTos().size() > 0) {
-                requestParams.append(this._arrayToUrlPart(this.getTos(), "to")+"&");
+            if (key == "to" && this.getTos().size() > 1) {
+                if (this._useHeaders() == true){
+                    requestParams.append("to=" + value + "&");
+                } else{
+                    requestParams.append(this._arrayToUrlPart(this.getTos(), "to")+"&");
+                }
             } else {
-                requestParams.append(URLEncoder.encode(key, "UTF-8"));
-                requestParams.append("=");
-                requestParams.append(URLEncoder.encode(value, "UTF-8"));
-                requestParams.append("&");
+            	if (key == "toname" && this.getToNames().size() > 0) {
+                	requestParams.append(this._arrayToUrlPart(this.getToNames(), "toname")+"&");
+                } else {
+                    try {
+                        requestParams.append(URLEncoder.encode(key, "UTF-8"));
+                    } catch (UnsupportedEncodingException e) {
+                        message = "Unsupported Encoding Exception";
+                    }
+                    requestParams.append("=");
+                    try {
+                        requestParams.append(URLEncoder.encode(value, "UTF-8"));
+                    } catch (UnsupportedEncodingException e) {
+                        message = "Unsupported Encoding Exception";
+                    }
+                    requestParams.append("&");
+                }
             }
         }
         String request = this.domain + this.endpoint;
@@ -552,7 +602,7 @@ public class Sendgrid {
             BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream())); 
             String line, response = "";
 
-            while ((line = reader.readLine()) != null) { 
+            while ((line = reader.readLine()) != null) {
                 // Process line...
                 response += line;
             }
@@ -574,9 +624,9 @@ public class Sendgrid {
                 }
             }
         } catch (MalformedURLException e) {
-            message = "MalformedURLException - " + e.getMessage();
+            message = "Malformed URL Exception";
         } catch (IOException e) {
-            message = "IOException - " + e.getMessage();
+            message = "IO Exception";
         }
     }
 
