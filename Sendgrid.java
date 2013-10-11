@@ -20,6 +20,7 @@ import com.google.appengine.labs.repackaged.org.json.JSONArray;
 public class Sendgrid {
     
     private String from,
+                   from_name,
                    reply_to,
                    subject,
                    text,
@@ -120,6 +121,7 @@ public class Sendgrid {
         return this;
     }
 
+
     /**
      * getFrom - Get the from email address
      *
@@ -137,6 +139,27 @@ public class Sendgrid {
      */
     public Sendgrid setFrom(String email) {
         this.from = email;
+
+        return this;
+    }
+
+    /**
+     * getFrom - Get the from email address
+     *
+     * @return  The from email address
+     */
+    public String getFromName() {
+        return this.from_name;
+    }
+
+    /**
+     * setFrom - Set the from email
+     *
+     * @param    email   An email address
+     * @return           The SendGrid object.
+     */
+    public Sendgrid setFromName(String email) {
+        this.from_name = email;
 
         return this;
     }
@@ -519,7 +542,12 @@ public class Sendgrid {
         params.put("api_user", this.username);
         params.put("api_key", this.password);
         params.put("subject", this.getSubject());
-        params.put("html", this.getHtml());
+        if(this.getHtml() != null) {
+            params.put("html", this.getHtml());
+        }
+        if(this.getFromName() != null) {
+            params.put("fromname", this.getFromName());
+        }
         params.put("text",this.getText());
         params.put("from", this.getFrom());
 
