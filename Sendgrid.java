@@ -573,11 +573,33 @@ public class Sendgrid {
     }
 
     /**
+     * Invoked when a warning is returned from the server that
+     * isn't critical
+     */
+    public static interface WarningListener {
+        public void warning(String message, Throwable t);
+    }
+
+    /**
      * send - Send an email
      *
-     * @throws JSONException 
+     * @throws JSONException
      */
     public void send() throws JSONException {
+        send(new WarningListener() {
+            public void warning(String w, Throwable t) {
+                message = w;
+            }
+        });
+    }
+
+    /**
+     * send - Send an email
+     *
+     * @param w callback that will receive warnings
+     * @throws JSONException
+     */
+    public void send(WarningListener w) throws JSONException {
         Map<String,String> data = new HashMap<String, String>();
 
         data = this._prepMessageData();
@@ -593,19 +615,19 @@ public class Sendgrid {
                     requestParams.append(this._arrayToUrlPart(this.getTos(), "to")+"&");
                 }
             } else {
-            	if (key == "toname" && this.getToNames().size() > 0) {
-                	requestParams.append(this._arrayToUrlPart(this.getToNames(), "toname")+"&");
+                if (key == "toname" && this.getToNames().size() > 0) {
+                    requestParams.append(this._arrayToUrlPart(this.getToNames(), "toname").substring(1)+"&");
                 } else {
                     try {
                         requestParams.append(URLEncoder.encode(key, "UTF-8"));
                     } catch (UnsupportedEncodingException e) {
-                        message = "Unsupported Encoding Exception";
+                        w.warning("Unsupported Encoding Exception", e);
                     }
                     requestParams.append("=");
                     try {
                         requestParams.append(URLEncoder.encode(value, "UTF-8"));
                     } catch (UnsupportedEncodingException e) {
-                        message = "Unsupported Encoding Exception";
+                        w.warning("Unsupported Encoding Exception", e);
                     }
                     requestParams.append("&");
                 }
@@ -625,9 +647,9 @@ public class Sendgrid {
             OutputStreamWriter writer = new OutputStreamWriter(connection.getOutputStream());
             writer.write(requestParams.toString());
             // Get the response
-            writer.flush(); 
+            writer.flush();
 
-            BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream())); 
+            BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
             String line, response = "";
 
             while ((line = reader.readLine()) != null) {
@@ -650,11 +672,12 @@ public class Sendgrid {
                     }
                     message += errorsObj.get(i);
                 }
+                w.warning(message, null);
             }
         } catch (MalformedURLException e) {
-            message = "Malformed URL Exception";
+            w.warning("Malformed URL Exception", e);
         } catch (IOException e) {
-            message = "IO Exception";
+            w.warning("IO Exception", e);
         }
     }
 
