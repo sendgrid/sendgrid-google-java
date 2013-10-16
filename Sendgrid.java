@@ -608,7 +608,7 @@ public class Sendgrid {
         while (paramIterator.hasNext()) {
             String key = paramIterator.next();
             String value = data.get(key);
-            if (key == "to" && this.getTos().size() > 1) {
+            if (key == "to" && this.getTos().size() > 0) {
                 if (this._useHeaders() == true){
                     requestParams.append("to=" + value + "&");
                 } else{
