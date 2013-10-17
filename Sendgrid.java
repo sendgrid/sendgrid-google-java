@@ -214,23 +214,6 @@ public class Sendgrid {
         return this;
     }
 
-    /**
-     * addBcc - Append an email address to the list of Blind Carbon Copy
-     * recipients
-     *
-     * @param email - an email address
-     * @throws JSONException
-     */
-    public Sendgrid addBcc(String email) throws JSONException {
-        if (this.bcc_list.size() > 0) {
-            this.bcc_list.add(email);
-        } else {
-            this.setBcc(email);
-        }
-
-        return this;
-    }
-
     /** 
      * getSubject - Get the email subject
      * 
