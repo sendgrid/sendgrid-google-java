@@ -121,7 +121,6 @@ public class Sendgrid {
         return this;
     }
 
-
     /**
      * getFrom - Get the from email address
      *
@@ -144,22 +143,22 @@ public class Sendgrid {
     }
 
     /**
-     * getFrom - Get the from email address
+     * getFromName - Get the from name
      *
-     * @return  The from email address
+     * @return  The from name
      */
     public String getFromName() {
         return this.from_name;
     }
 
     /**
-     * setFrom - Set the from email
+     * setFromName - Set the from name
      *
-     * @param    email   An email address
+     * @param    name    The name
      * @return           The SendGrid object.
      */
-    public Sendgrid setFromName(String email) {
-        this.from_name = email;
+    public Sendgrid setFromName(String name) {
+        this.from_name = name;
 
         return this;
     }
