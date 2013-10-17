@@ -200,10 +200,16 @@ public class Sendgrid {
      *
      * @param  email   an email address
      * @return         the SendGrid object.
+     * @throws JSONException
      */
-    public Sendgrid setBcc(String email) {
+    public Sendgrid setBcc(String email) throws JSONException {
         this.bcc_list = new ArrayList<String>();
         this.bcc_list.add(email);
+        if (this._useHeaders() == true)
+        {
+            this.addFilterSetting("bcc", "enable", "1");
+            this.addFilterSetting("bcc", "email", email);
+        }
 
         return this;
     }
@@ -213,8 +219,9 @@ public class Sendgrid {
      * recipients
      *
      * @param email - an email address
+     * @throws JSONException
      */
-    public Sendgrid addBcc(String email) {
+    public Sendgrid addBcc(String email) throws JSONException {
         if (this.bcc_list.size() > 0) {
             this.bcc_list.add(email);
         } else {
