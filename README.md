@@ -140,3 +140,12 @@ mail.addTo("foo@bar.com")
     .addFilterSetting("footer", "text/html", "<p style='color:red;'>Here is an HTML footer</p>");
 ```
 
+### Using Bcc ###
+
+Bcc is used to send a blind carbon copy to an address
+
+```java
+mail.setBcc("foo@bar.com")
+```
+
+Note : addBcc() was removed because is currently not supported.

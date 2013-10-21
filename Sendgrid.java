@@ -20,6 +20,7 @@ import com.google.appengine.labs.repackaged.org.json.JSONArray;
 public class Sendgrid {
     
     private String from,
+                   from_name,
                    reply_to,
                    subject,
                    text,
@@ -142,6 +143,27 @@ public class Sendgrid {
     }
 
     /**
+     * getFromName - Get the from name
+     *
+     * @return  The from name
+     */
+    public String getFromName() {
+        return this.from_name;
+    }
+
+    /**
+     * setFromName - Set the from name
+     *
+     * @param    name    The name
+     * @return           The SendGrid object.
+     */
+    public Sendgrid setFromName(String name) {
+        this.from_name = name;
+
+        return this;
+    }
+
+    /**
      * getReplyTo - Get reply to address
      *
      * @return the reply to address
@@ -177,25 +199,15 @@ public class Sendgrid {
      *
      * @param  email   an email address
      * @return         the SendGrid object.
+     * @throws JSONException
      */
-    public Sendgrid setBcc(String email) {
+    public Sendgrid setBcc(String email) throws JSONException {
         this.bcc_list = new ArrayList<String>();
         this.bcc_list.add(email);
-
-        return this;
-    }
-
-    /**
-     * addBcc - Append an email address to the list of Blind Carbon Copy
-     * recipients
-     *
-     * @param email - an email address
-     */
-    public Sendgrid addBcc(String email) {
-        if (this.bcc_list.size() > 0) {
-            this.bcc_list.add(email);
-        } else {
-            this.setBcc(email);
+        if (this._useHeaders() == true)
+        {
+            this.addFilterSetting("bcc", "enable", "1");
+            this.addFilterSetting("bcc", "email", email);
         }
 
         return this;
@@ -519,7 +531,12 @@ public class Sendgrid {
         params.put("api_user", this.username);
         params.put("api_key", this.password);
         params.put("subject", this.getSubject());
-        params.put("html", this.getHtml());
+        if(this.getHtml() != null) {
+            params.put("html", this.getHtml());
+        }
+        if(this.getFromName() != null) {
+            params.put("fromname", this.getFromName());
+        }
         params.put("text",this.getText());
         params.put("from", this.getFrom());
 
@@ -545,11 +562,33 @@ public class Sendgrid {
     }
 
     /**
+     * Invoked when a warning is returned from the server that
+     * isn't critical
+     */
+    public static interface WarningListener {
+        public void warning(String message, Throwable t);
+    }
+
+    /**
      * send - Send an email
      *
-     * @throws JSONException 
+     * @throws JSONException
      */
     public void send() throws JSONException {
+        send(new WarningListener() {
+            public void warning(String w, Throwable t) {
+                message = w;
+            }
+        });
+    }
+
+    /**
+     * send - Send an email
+     *
+     * @param w callback that will receive warnings
+     * @throws JSONException
+     */
+    public void send(WarningListener w) throws JSONException {
         Map<String,String> data = new HashMap<String, String>();
 
         data = this._prepMessageData();
@@ -558,26 +597,26 @@ public class Sendgrid {
         while (paramIterator.hasNext()) {
             String key = paramIterator.next();
             String value = data.get(key);
-            if (key == "to" && this.getTos().size() > 1) {
+            if (key == "to" && this.getTos().size() > 0) {
                 if (this._useHeaders() == true){
                     requestParams.append("to=" + value + "&");
                 } else{
                     requestParams.append(this._arrayToUrlPart(this.getTos(), "to")+"&");
                 }
             } else {
-            	if (key == "toname" && this.getToNames().size() > 0) {
-                	requestParams.append(this._arrayToUrlPart(this.getToNames(), "toname")+"&");
+                if (key == "toname" && this.getToNames().size() > 0) {
+                    requestParams.append(this._arrayToUrlPart(this.getToNames(), "toname").substring(1)+"&");
                 } else {
                     try {
                         requestParams.append(URLEncoder.encode(key, "UTF-8"));
                     } catch (UnsupportedEncodingException e) {
-                        message = "Unsupported Encoding Exception";
+                        w.warning("Unsupported Encoding Exception", e);
                     }
                     requestParams.append("=");
                     try {
                         requestParams.append(URLEncoder.encode(value, "UTF-8"));
                     } catch (UnsupportedEncodingException e) {
-                        message = "Unsupported Encoding Exception";
+                        w.warning("Unsupported Encoding Exception", e);
                     }
                     requestParams.append("&");
                 }
@@ -597,9 +636,9 @@ public class Sendgrid {
             OutputStreamWriter writer = new OutputStreamWriter(connection.getOutputStream());
             writer.write(requestParams.toString());
             // Get the response
-            writer.flush(); 
+            writer.flush();
 
-            BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream())); 
+            BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
             String line, response = "";
 
             while ((line = reader.readLine()) != null) {
@@ -622,11 +661,12 @@ public class Sendgrid {
                     }
                     message += errorsObj.get(i);
                 }
+                w.warning(message, null);
             }
         } catch (MalformedURLException e) {
-            message = "Malformed URL Exception";
+            w.warning("Malformed URL Exception", e);
         } catch (IOException e) {
-            message = "IO Exception";
+            w.warning("IO Exception", e);
         }
     }
 
