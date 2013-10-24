@@ -277,6 +277,27 @@ public class Sendgrid {
     }
 
     /**
+     * getUseHeaders - Get value for use_headers.
+     *
+     * @return         The use_headers value.
+     */
+    public Boolean getUseHeaders() {
+        return this.use_headers;
+    }
+
+    /**
+     * setUseHeaders - Set the email to use headers.
+     *
+     * @param   value  True or false value.
+     * @return         The SendGrid object.
+     */
+    public Sendgrid setUseHeaders(Boolean value) {
+        this.use_headers = value;
+
+        return this;
+    }
+
+    /**
      * setCategories - Set the list of category headers
      * destroys previous category header data
      *
