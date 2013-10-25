@@ -148,4 +148,6 @@ Bcc is used to send a blind carbon copy to an address
 mail.setBcc("foo@bar.com")
 ```
 
-Note : addBcc() was removed because is currently not supported.
+Notes:
+- addBcc() was removed because is currently not supported.
+- standard setBcc will hide who the email is addressed to.
