@@ -142,7 +142,7 @@ mail.addTo("foo@bar.com")
 
 ### Using Bcc ###
 
-Bcc is used to send a blind carbon copy to an address
+Bcc is used to send a blind carbon copy to an address. Standard setBcc will hide who the email is addressed to. This is by design. If you use the multiple addTo, each user will receive a personalized email showing only their email.
 
 ```java
 mail.setBcc("foo@bar.com")
@@ -150,4 +150,3 @@ mail.setBcc("foo@bar.com")
 
 Notes:
 - addBcc() was removed because is currently not supported.
-- standard setBcc will hide who the email is addressed to.
