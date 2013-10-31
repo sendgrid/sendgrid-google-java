@@ -1,5 +1,6 @@
-# sendgrid-java #
-This library allows you to quickly and easily send emails through SendGrid using Java.
+# Sendgrid-google-java #
+
+This library allows you to quickly and easily send emails from Google App Engine through SendGrid using Java.
  
 ## License ##
 Licensed under the MIT License.
