@@ -40,6 +40,12 @@ public class Sendgrid {
     public Sendgrid(String username, String password) {
         this.username = username;
         this.password = password;
+        try {
+            this.setCategory("google_java");
+        } catch (JSONException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
     }
 
     /**
