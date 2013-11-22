@@ -293,6 +293,12 @@ public class Sendgrid {
     public Sendgrid setCategories(String[] category_list) throws JSONException {
         JSONArray categories_json = new JSONArray(category_list);
         this.header_list.put("category", categories_json);
+        try {
+            this.addCategory("google_java");
+        } catch (JSONException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
 
         return this;
     }
@@ -307,6 +313,12 @@ public class Sendgrid {
     public Sendgrid setCategory(String category) throws JSONException {
         JSONArray json_category = new JSONArray(new String[]{category});
         this.header_list.put("category", json_category);
+        try {
+            this.addCategory("google_java");
+        } catch (JSONException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
 
         return this;
     }
