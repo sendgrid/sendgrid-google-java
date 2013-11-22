@@ -41,9 +41,8 @@ public class Sendgrid {
         this.username = username;
         this.password = password;
         try {
-            this.setCategory("google_java");
+            this.setCategory("google_sendgrid_java_lib");
         } catch (JSONException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
     }
@@ -293,12 +292,7 @@ public class Sendgrid {
     public Sendgrid setCategories(String[] category_list) throws JSONException {
         JSONArray categories_json = new JSONArray(category_list);
         this.header_list.put("category", categories_json);
-        try {
-            this.addCategory("google_java");
-        } catch (JSONException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
+        this.addCategory("google_sendgrid_java_lib");
 
         return this;
     }
@@ -313,12 +307,7 @@ public class Sendgrid {
     public Sendgrid setCategory(String category) throws JSONException {
         JSONArray json_category = new JSONArray(new String[]{category});
         this.header_list.put("category", json_category);
-        try {
-            this.addCategory("google_java");
-        } catch (JSONException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
+        this.addCategory("google_sendgrid_java_lib");
 
         return this;
     }
