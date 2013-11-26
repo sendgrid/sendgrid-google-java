@@ -40,6 +40,11 @@ public class Sendgrid {
     public Sendgrid(String username, String password) {
         this.username = username;
         this.password = password;
+        try {
+            this.setCategory("google_sendgrid_java_lib");
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -287,6 +292,7 @@ public class Sendgrid {
     public Sendgrid setCategories(String[] category_list) throws JSONException {
         JSONArray categories_json = new JSONArray(category_list);
         this.header_list.put("category", categories_json);
+        this.addCategory("google_sendgrid_java_lib");
 
         return this;
     }
@@ -301,6 +307,7 @@ public class Sendgrid {
     public Sendgrid setCategory(String category) throws JSONException {
         JSONArray json_category = new JSONArray(new String[]{category});
         this.header_list.put("category", json_category);
+        this.addCategory("google_sendgrid_java_lib");
 
         return this;
     }
