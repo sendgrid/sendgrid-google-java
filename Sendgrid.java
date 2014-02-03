@@ -602,16 +602,16 @@ public class Sendgrid {
         StringBuffer requestParams = new StringBuffer();
         Iterator<String> paramIterator = data.keySet().iterator();
         while (paramIterator.hasNext()) {
-            String key = paramIterator.next();
-            String value = data.get(key);
-            if (key == "to" && this.getTos().size() > 0) {
+            final String key = paramIterator.next();
+            final String value = data.get(key);
+            if (key.equals("to") && this.getTos().size() > 0) {
                 if (this._useHeaders() == true){
                     requestParams.append("to=" + value + "&");
                 } else{
                     requestParams.append(this._arrayToUrlPart(this.getTos(), "to")+"&");
                 }
             } else {
-                if (key == "toname" && this.getToNames().size() > 0) {
+                if (key.equals("toname") && this.getToNames().size() > 0) {
                     requestParams.append(this._arrayToUrlPart(this.getToNames(), "toname").substring(1)+"&");
                 } else {
                     try {
