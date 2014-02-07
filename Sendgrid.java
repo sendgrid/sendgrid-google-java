@@ -120,7 +120,7 @@ public class Sendgrid {
      * @param    name    Recipient name
      * @return           The SendGrid object.
      */
-    public Sendgrid addToName(String name) {
+    private Sendgrid addToName(String name) {
         this.to_name_list.add(name);
 
         return this;
