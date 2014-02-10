@@ -84,9 +84,9 @@ public class Sendgrid {
             this.to_list.add(toAddress);
         } else {
             if (name.length() > 0){
-              this.addToName(name);
+              this._addToName(name);
             } else {
-                this.addToName("");
+                this._addToName("");
             }
             this.to_list.add(email);
         }
@@ -111,19 +111,6 @@ public class Sendgrid {
      */
     public ArrayList<String> getToNames() {
         return this.to_name_list;
-    }
-
-    /**
-     * addToName - Append an recipient name to the existing list of names
-     *
-     * @param    email   Recipient email address
-     * @param    name    Recipient name
-     * @return           The SendGrid object.
-     */
-    public Sendgrid addToName(String name) {
-        this.to_name_list.add(name);
-
-        return this;
     }
 
     /**
@@ -675,6 +662,19 @@ public class Sendgrid {
         } catch (IOException e) {
             w.warning("IO Exception", e);
         }
+    }
+
+    /**
+     * _addToName - Append an recipient name to the existing list of names
+     *
+     * @param    email   Recipient email address
+     * @param    name    Recipient name
+     * @return           The SendGrid object.
+     */
+    private Sendgrid _addToName(String name) {
+        this.to_name_list.add(name);
+
+        return this;
     }
 
     /**
