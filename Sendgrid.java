@@ -26,7 +26,7 @@ public class Sendgrid {
                    text,
                    html;
     protected Boolean use_headers = true;
-    public String message = "";
+    private String serverResponse = "";
     private ArrayList<String> to_list  = new ArrayList<String>();
     private ArrayList<String> to_name_list  = new ArrayList<String>();
     private ArrayList<String> bcc_list = new ArrayList<String>();
@@ -492,6 +492,15 @@ public class Sendgrid {
     }
 
     /**
+     * getServerResponse - Get the server response message
+     *
+     * @return  The server response message
+     */
+    public String getServerResponse() {
+        return this.serverResponse;
+    }
+
+    /**
      * _arrayToUrlPart - Converts an ArrayList to a url friendly string
      *
      * @param  array   the array to convert
@@ -560,7 +569,7 @@ public class Sendgrid {
      * isn't critical
      */
     public static interface WarningListener {
-        public void warning(String message, Throwable t);
+        public void warning(String serverResponse, Throwable t);
     }
 
     /**
@@ -571,7 +580,7 @@ public class Sendgrid {
     public void send() throws JSONException {
         send(new WarningListener() {
             public void warning(String w, Throwable t) {
-                message = w;
+                serverResponse = w;
             }
         });
     }
@@ -644,18 +653,18 @@ public class Sendgrid {
 
             if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
                 // OK
-                message = "success";
+                serverResponse = "success";
             } else {
                 // Server returned HTTP error code.
                 JSONObject apiResponse = new JSONObject(response);
                 JSONArray errorsObj = (JSONArray) apiResponse.get("errors");
                 for (int i = 0; i < errorsObj.length(); i++) {
                     if (i != 0) {
-                        message += ", ";
+                        serverResponse += ", ";
                     }
-                    message += errorsObj.get(i);
+                    serverResponse += errorsObj.get(i);
                 }
-                w.warning(message, null);
+                w.warning(serverResponse, null);
             }
         } catch (MalformedURLException e) {
             w.warning("Malformed URL Exception", e);
