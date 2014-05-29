@@ -603,11 +603,11 @@ public class Sendgrid {
             if (key.equals("to") && this.getTos().size() > 0) {
                 if (this._useHeaders() == true){
                     try {
-						requestParams.append("to=" + URLEncoder.encode(value, "UTF-8") + "&");
-					} catch (UnsupportedEncodingException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
+                        requestParams.append("to=" + URLEncoder.encode(value, "UTF-8") + "&");
+                    } catch (UnsupportedEncodingException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
                 } else{
                     requestParams.append(this._arrayToUrlPart(this.getTos(), "to")+"&");
                 }
