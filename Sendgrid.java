@@ -605,7 +605,6 @@ public class Sendgrid {
                     try {
                         requestParams.append("to=" + URLEncoder.encode(value, "UTF-8") + "&");
                     } catch (UnsupportedEncodingException e) {
-                        // TODO Auto-generated catch block
                         e.printStackTrace();
                     }
                 } else{
