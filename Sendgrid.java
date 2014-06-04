@@ -602,7 +602,11 @@ public class Sendgrid {
             final String value = data.get(key);
             if (key.equals("to") && this.getTos().size() > 0) {
                 if (this._useHeaders() == true){
-                    requestParams.append("to=" + value + "&");
+                    try {
+                        requestParams.append("to=" + URLEncoder.encode(value, "UTF-8") + "&");
+                    } catch (UnsupportedEncodingException e) {
+                        e.printStackTrace();
+                    }
                 } else{
                     requestParams.append(this._arrayToUrlPart(this.getTos(), "to")+"&");
                 }
