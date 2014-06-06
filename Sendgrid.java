@@ -553,7 +553,7 @@ public class Sendgrid {
             JSONArray tos_json = new JSONArray(this.getTos());
             headers.put("to", tos_json);
             this.setHeaders(headers);
-            params.put("x-smtpapi", escapeUnicode(this.getHeaders().toString()));
+            params.put("x-smtpapi", _escapeUnicode(this.getHeaders().toString()));
         } else {
             params.put("to", this.getTos().toString());
             if (this.getToNames().size() > 0) {
@@ -739,7 +739,7 @@ public class Sendgrid {
         return false;
     }
     
-    private String escapeUnicode(String input) {
+    private String _escapeUnicode(String input) {
         StringBuilder sb = new StringBuilder();
         int len = input.length();
         for (int i = 0; i < len; i++) {
