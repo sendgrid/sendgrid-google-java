@@ -1,70 +1,92 @@
-package googleSendgridJava;
+package com.sendgrid.google;
 
+import com.google.appengine.labs.repackaged.org.json.JSONArray;
+import com.google.appengine.labs.repackaged.org.json.JSONException;
+import com.google.appengine.labs.repackaged.org.json.JSONObject;
+
+import java.io.*;
 import java.net.HttpURLConnection;
-import java.util.*;
-import java.io.IOException;
-import java.util.Iterator;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.UnsupportedEncodingException;
-
-import com.google.appengine.labs.repackaged.org.json.JSONException;
-import com.google.appengine.labs.repackaged.org.json.JSONObject;
-import com.google.appengine.labs.repackaged.org.json.JSONArray;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.logging.Logger;
 
 
+/**
+ * Invoked when a warning is returned from the server that
+ * isn't critical
+ */
+interface WarningListener {
+    void warning(String serverResponse, Throwable t);
+}
+
+/**
+ * Send emails from Google App Engine through SendGrid using Java
+ */
 public class Sendgrid {
-    
-    private String from,
-                   from_name,
-                   reply_to,
-                   subject,
-                   text,
-                   html;
-    protected Boolean use_headers = true;
-    private String serverResponse = "";
-    private ArrayList<String> to_list  = new ArrayList<String>();
-    private ArrayList<String> to_name_list  = new ArrayList<String>();
-    private ArrayList<String> bcc_list = new ArrayList<String>();
-    private JSONObject header_list = new JSONObject();
 
-    protected String domain = "https://sendgrid.com/",
-                     endpoint= "api/mail.send.json",
-                     username,
-                     password;
+    private static final Logger LOGGER = Logger.getLogger(Sendgrid.class.getCanonicalName());
+
+    private static final String UTF8 = StandardCharsets.UTF_8.toString();
+
+    private static final String DOMAIN = "https://sendgrid.com/";
+    private static final String ENDPOINT = "api/mail.send.json";
+
+    private static final String CATEGORY = "google_sendgrid_java_lib";
+
+    private boolean useHeaders = true;
+
+    private String username;
+
+    private String password;
+    private String from;
+    private String fromName;
+    private String replyTo;
+    private String subject;
+    private String text;
+    private String html;
+    private String serverResponse = "";
+    private ArrayList<String> toList = new ArrayList<>();
+    private ArrayList<String> toNames = new ArrayList<>();
+    private ArrayList<String> bccs = new ArrayList<>();
+    private JSONObject headers = new JSONObject();
 
     public Sendgrid(String username, String password) {
         this.username = username;
         this.password = password;
         try {
-            this.setCategory("google_sendgrid_java_lib");
+            this.setCategory(CATEGORY);
         } catch (JSONException e) {
-            e.printStackTrace();
+            LOGGER.info(e.getMessage());
         }
+    }
+
+    public void setUseHeaders(boolean useHeaders) {
+        this.useHeaders = useHeaders;
     }
 
     /**
      * getTos - Return the list of recipients
      *
-     * @return  List of recipients
+     * @return List of recipients
      */
     public ArrayList<String> getTos() {
-        return this.to_list;
+        return this.toList;
     }
 
     /**
      * setTo - Initialize a single email for the recipient 'to' field
      * Destroy previous recipient 'to' data.
      *
-     * @param    email   A list of email addresses
-     * @return           The SendGrid object.
+     * @param email A list of email addresses
+     * @return The SendGrid object.
      */
     public Sendgrid setTo(String email) {
-        this.to_list = new ArrayList<String>();
+        this.toList = new ArrayList<>();
         this.addTo(email);
 
         return this;
@@ -74,21 +96,21 @@ public class Sendgrid {
      * addTo - Append an email address to the existing list of addresses
      * Preserve previous recipient 'to' data.
      *
-     * @param    email   Recipient email address
-     * @param    name    Recipient name
-     * @return           The SendGrid object.
+     * @param email Recipient email address
+     * @param name  Recipient name
+     * @return The SendGrid object.
      */
     public Sendgrid addTo(String email, String name) {
-        if (this._useHeaders() == true){
+        if (this.useHeaders()) {
             String toAddress = (name.length() > 0) ? name + "<" + email + ">" : email;
-            this.to_list.add(toAddress);
+            this.toList.add(toAddress);
         } else {
-            if (name.length() > 0){
-              this._addToName(name);
+            if (!name.trim().isEmpty()) {
+                this.addToName(name);
             } else {
-                this._addToName("");
+                this.addToName("");
             }
-            this.to_list.add(email);
+            this.toList.add(email);
         }
 
         return this;
@@ -97,8 +119,8 @@ public class Sendgrid {
     /**
      * addTo - Make the second parameter("name") of "addTo" method optional
      *
-     * @param   email   A single email address 
-     * @return          The SendGrid object.  
+     * @param email A single email address
+     * @return The SendGrid object.
      */
     public Sendgrid addTo(String email) {
         return addTo(email, "");
@@ -107,16 +129,16 @@ public class Sendgrid {
     /**
      * getTos - Return the list of names for recipients
      *
-     * @return  List of names
+     * @return List of names
      */
     public ArrayList<String> getToNames() {
-        return this.to_name_list;
+        return this.toNames;
     }
 
     /**
      * getFrom - Get the from email address
      *
-     * @return  The from email address
+     * @return The from email address
      */
     public String getFrom() {
         return this.from;
@@ -125,8 +147,8 @@ public class Sendgrid {
     /**
      * setFrom - Set the from email
      *
-     * @param    email   An email address
-     * @return           The SendGrid object.
+     * @param email An email address
+     * @return The SendGrid object.
      */
     public Sendgrid setFrom(String email) {
         this.from = email;
@@ -137,20 +159,20 @@ public class Sendgrid {
     /**
      * getFromName - Get the from name
      *
-     * @return  The from name
+     * @return The from name
      */
     public String getFromName() {
-        return this.from_name;
+        return this.fromName;
     }
 
     /**
      * setFromName - Set the from name
      *
-     * @param    name    The name
-     * @return           The SendGrid object.
+     * @param name The name
+     * @return The SendGrid object.
      */
     public Sendgrid setFromName(String name) {
-        this.from_name = name;
+        this.fromName = name;
 
         return this;
     }
@@ -161,19 +183,19 @@ public class Sendgrid {
      * @return the reply to address
      */
     public String getReplyTo() {
-        return this.reply_to;
+        return this.replyTo;
     }
 
     /**
      * setReplyTo - set the reply-to address
      *
-     * @param  email   the email to reply to
-     * @return         the SendGrid object.
+     * @param email the email to reply to
+     * @return the SendGrid object.
      */
     public Sendgrid setReplyTo(String email) {
-      this.reply_to = email;
+        this.replyTo = email;
 
-      return this;
+        return this;
     }
 
     /**
@@ -182,22 +204,21 @@ public class Sendgrid {
      * @return ArrayList - the list of Blind Carbon Copy recipients
      */
     public ArrayList<String> getBccs() {
-        return this.bcc_list;
+        return this.bccs;
     }
 
     /**
      * setBcc - Initialize the list of Carbon Copy recipients
      * destroy previous recipient Blind Carbon Copy data
      *
-     * @param  email   an email address
-     * @return         the SendGrid object.
+     * @param email an email address
+     * @return the SendGrid object.
      * @throws JSONException
      */
     public Sendgrid setBcc(String email) throws JSONException {
-        this.bcc_list = new ArrayList<String>();
-        this.bcc_list.add(email);
-        if (this._useHeaders() == true)
-        {
+        this.bccs = new ArrayList<String>();
+        this.bccs.add(email);
+        if (this.useHeaders()) {
             this.addFilterSetting("bcc", "enable", "1");
             this.addFilterSetting("bcc", "email", email);
         }
@@ -205,62 +226,62 @@ public class Sendgrid {
         return this;
     }
 
-    /** 
+    /**
      * getSubject - Get the email subject
-     * 
-     * @return  The email subject
+     *
+     * @return The email subject
      */
     public String getSubject() {
         return this.subject;
     }
 
-    /** 
+    /**
      * setSubject - Set the email subject
-     * 
-     * @param    subject   The email subject
-     * @return             The SendGrid object
+     *
+     * @param subject The email subject
+     * @return The SendGrid object
      */
     public Sendgrid setSubject(String subject) {
         this.subject = subject;
-      
+
         return this;
     }
 
-    /** 
+    /**
      * getText - Get the plain text part of the email
-     * 
-     * @return   the plain text part of the email
+     *
+     * @return the plain text part of the email
      */
     public String getText() {
         return this.text;
     }
 
-    /** 
+    /**
      * setText - Set the plain text part of the email
-     * 
-     * @param   text   The plain text of the email
-     * @return         The SendGrid object.
+     *
+     * @param text The plain text of the email
+     * @return The SendGrid object.
      */
     public Sendgrid setText(String text) {
         this.text = text;
 
         return this;
     }
-    
-    /** 
+
+    /**
      * getHtml - Get the HTML part of the email
-     * 
-     * @return   The HTML part of the email.
+     *
+     * @return The HTML part of the email.
      */
     public String getHtml() {
         return this.html;
     }
 
-    /** 
+    /**
      * setHTML - Set the HTML part of the email
-     * 
-     * @param   html   The HTML part of the email
-     * @return         The SendGrid object.
+     *
+     * @param html The HTML part of the email
+     * @return The SendGrid object.
      */
     public Sendgrid setHtml(String html) {
         this.html = html;
@@ -272,14 +293,14 @@ public class Sendgrid {
      * setCategories - Set the list of category headers
      * destroys previous category header data
      *
-     * @param  category_list   the list of category values
-     * @return                 the SendGrid object.
+     * @param category_list the list of category values
+     * @return the SendGrid object.
      * @throws JSONException
      */
     public Sendgrid setCategories(String[] category_list) throws JSONException {
         JSONArray categories_json = new JSONArray(category_list);
-        this.header_list.put("category", categories_json);
-        this.addCategory("google_sendgrid_java_lib");
+        this.headers.put("category", categories_json);
+        this.addCategory(CATEGORY);
 
         return this;
     }
@@ -287,14 +308,14 @@ public class Sendgrid {
     /**
      * setCategory - Clears the category list and adds the given category
      *
-     * @param  category   the new category to append
-     * @return            the SendGrid object.
+     * @param category the new category to append
+     * @return the SendGrid object.
      * @throws JSONException
      */
     public Sendgrid setCategory(String category) throws JSONException {
         JSONArray json_category = new JSONArray(new String[]{category});
-        this.header_list.put("category", json_category);
-        this.addCategory("google_sendgrid_java_lib");
+        this.headers.put("category", json_category);
+        this.addCategory(CATEGORY);
 
         return this;
     }
@@ -302,13 +323,13 @@ public class Sendgrid {
     /**
      * addCategory - Append a category to the list of categories
      *
-     * @param  category   the new category to append
-     * @return            the SendGrid object.
+     * @param category the new category to append
+     * @return the SendGrid object.
      * @throws JSONException
      */
     public Sendgrid addCategory(String category) throws JSONException {
-        if (true == this.header_list.has("category")) {
-            ((JSONArray) this.header_list.get("category")).put(category);
+        if (this.headers.has("category")) {
+            ((JSONArray) this.headers.get("category")).put(category);
         } else {
             this.setCategory(category);
         }
@@ -321,12 +342,12 @@ public class Sendgrid {
      * to the list emails in a one to one relationship. (IE, value[0] = email[0],
      * value[1] = email[1])
      *
-     * @param  key_value_pairs   key/value pairs where the value is an array of values
-     * @return                   the SendGrid object.
+     * @param key_value_pairs key/value pairs where the value is an array of values
+     * @return the SendGrid object.
      */
     public Sendgrid setSubstitutions(JSONObject key_value_pairs) {
         try {
-            this.header_list.put("sub", key_value_pairs);
+            this.headers.put("sub", key_value_pairs);
         } catch (JSONException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -340,33 +361,31 @@ public class Sendgrid {
      * to the list emails in a one to one relationship. (IE, value[0] = email[0],
      * value[1] = email[1])
      *
-     * @param  from_key    the value to be replaced
-     * @param  to_values   an array of values to replace the from_value
-     * @return             the SendGrid object.
+     * @param from_value  the value to be replaced
+     * @param to_values an array of values to replace the from_value
+     * @return the SendGrid object.
      * @throws JSONException
-     * @throws IOException
-     * @throws JsonMappingException
-     * @throws JsonParseException
+     * @throws JSONException
      */
     public Sendgrid addSubstitution(String from_value, String[] to_values) throws JSONException {
-      if (false == this.header_list.has("sub")) {
-        this.header_list.put("sub", new JSONObject());
-      }
-      JSONArray json_values = new JSONArray(to_values);
-      ((JSONObject) this.header_list.get("sub")).put(from_value, json_values);
+        if (!this.headers.has("sub")) {
+            this.headers.put("sub", new JSONObject());
+        }
+        JSONArray json_values = new JSONArray(to_values);
+        ((JSONObject) this.headers.get("sub")).put(from_value, json_values);
 
-      return this;
+        return this;
     }
 
     /**
      * setSection - Set a list of section values
      *
-     * @param  key_value_pairs   key/value pairs
-     * @return                   the SendGrid object.
+     * @param key_value_pairs key/value pairs
+     * @return the SendGrid object.
      * @throws JSONException
      */
     public Sendgrid setSections(JSONObject key_value_pairs) throws JSONException {
-        this.header_list.put("section", key_value_pairs);
+        this.headers.put("section", key_value_pairs);
 
         return this;
     }
@@ -374,16 +393,16 @@ public class Sendgrid {
     /**
      * addSection - append a section value to the list of section values
      *
-     * @param  from_value  the value to be replaced
-     * @param  to_value    the value to replace
-     * @return             the SendGrid object.
+     * @param from_value the value to be replaced
+     * @param to_value   the value to replace
+     * @return the SendGrid object.
      * @throws JSONException
      */
     public Sendgrid addSection(String from_value, String to_value) throws JSONException {
-        if (false == this.header_list.has("section")) {
-          this.header_list.put("section", new JSONObject() );
+        if (!this.headers.has("section")) {
+            this.headers.put("section", new JSONObject());
         }
-        ((JSONObject) this.header_list.get("section")).put(from_value, to_value);
+        ((JSONObject) this.headers.get("section")).put(from_value, to_value);
 
         return this;
     }
@@ -395,10 +414,9 @@ public class Sendgrid {
      */
     public Sendgrid setUniqueArguments(JSONObject key_value_pairs) {
         try {
-            this.header_list.put("unique_args", key_value_pairs);
+            this.headers.put("unique_args", key_value_pairs);
         } catch (JSONException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            LOGGER.info(e.getMessage());
         }
 
         return this;
@@ -407,23 +425,21 @@ public class Sendgrid {
     /**
      * addUniqueArgument - Set a key/value pair of unique arguments, to be used for tracking purposes
      *
-     * @param key     the key
-     * @param value   the value
+     * @param key   the key
+     * @param value the value
      */
     public Sendgrid addUniqueArgument(String key, String value) {
-        if (false == this.header_list.has("unique_args")) {
-          try {
-              this.header_list.put("unique_args", new JSONObject());
-          } catch (JSONException e) {
-              // TODO Auto-generated catch block
-              e.printStackTrace();
-          }
+        if (!this.headers.has("unique_args")) {
+            try {
+                this.headers.put("unique_args", new JSONObject());
+            } catch (JSONException e) {
+                LOGGER.info(e.getMessage());
+            }
         }
         try {
-            ((JSONObject) this.header_list.get("unique_args")).put(key, value);
+            ((JSONObject) this.headers.get("unique_args")).put(key, value);
         } catch (JSONException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            LOGGER.info(e.getMessage());
         }
 
         return this;
@@ -436,35 +452,34 @@ public class Sendgrid {
      */
     public Sendgrid setFilterSettings(JSONObject filter_settings) {
         try {
-            this.header_list.put("filters", filter_settings);
+            this.headers.put("filters", filter_settings);
         } catch (JSONException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            LOGGER.info(e.getMessage());
         }
 
         return this;
     }
 
-    /** 
+    /**
      * addFilterSetting - Append a filter setting to the list of filter settings
      *
-     * @param  filter_name       filter name
-     * @param  parameter_name    parameter name
-     * @param  parameter_value   setting value
+     * @param filter_name     filter name
+     * @param parameter_name  parameter name
+     * @param parameter_value setting value
      * @throws JSONException
      */
     public Sendgrid addFilterSetting(String filter_name, String parameter_name, String parameter_value) throws JSONException {
-        if (false == this.header_list.has("filters")) {
-            this.header_list.put("filters", new JSONObject());
+        if (!this.headers.has("filters")) {
+            this.headers.put("filters", new JSONObject());
         }
-        if (false == ((JSONObject) this.header_list.get("filters")).has(filter_name)) {
-            ((JSONObject) this.header_list.get("filters")).put(filter_name, new JSONObject());
+        if (!((JSONObject) this.headers.get("filters")).has(filter_name)) {
+            ((JSONObject) this.headers.get("filters")).put(filter_name, new JSONObject());
         }
-        if (false == ((JSONObject) ((JSONObject) this.header_list.get("filters")).get(filter_name)).has("settings")) {
-            ((JSONObject) ((JSONObject) this.header_list.get("filters")).get(filter_name)).put("settings", new JSONObject());
+        if (!((JSONObject) ((JSONObject) this.headers.get("filters")).get(filter_name)).has("settings")) {
+            ((JSONObject) ((JSONObject) this.headers.get("filters")).get(filter_name)).put("settings", new JSONObject());
         }
-        ((JSONObject) ((JSONObject) ((JSONObject) this.header_list.get("filters")).get(filter_name)).get("settings"))
-            .put(parameter_name, parameter_value);
+        ((JSONObject) ((JSONObject) ((JSONObject) this.headers.get("filters")).get(filter_name)).get("settings"))
+                .put(parameter_name, parameter_value);
 
         return this;
     }
@@ -475,18 +490,18 @@ public class Sendgrid {
      * @return JSONObject with headers
      */
     public JSONObject getHeaders() {
-        return this.header_list;
+        return this.headers;
     }
 
     /**
      * setHeaders - Sets the list headers
      * destroys previous header data
      *
-     * @param  key_value_pairs   the list of header data
-     * @return                   the SendGrid object.
+     * @param key_value_pairs the list of header data
+     * @return the SendGrid object.
      */
     public Sendgrid setHeaders(JSONObject key_value_pairs) {
-        this.header_list = key_value_pairs;
+        this.headers = key_value_pairs;
 
         return this;
     }
@@ -494,28 +509,26 @@ public class Sendgrid {
     /**
      * getServerResponse - Get the server response message
      *
-     * @return  The server response message
+     * @return The server response message
      */
     public String getServerResponse() {
         return this.serverResponse;
     }
 
     /**
-     * _arrayToUrlPart - Converts an ArrayList to a url friendly string
+     * arrayToUrlPart - Converts an ArrayList to a url friendly string
      *
-     * @param  array   the array to convert
-     * @param  token   the name of parameter
-     * @return         a url part that can be concatenated to a url request
+     * @param array the array to convert
+     * @param token the name of parameter
+     * @return a url part that can be concatenated to a url request
      */
-    protected String _arrayToUrlPart(ArrayList<String> array, String token) {
+    protected String arrayToUrlPart(ArrayList<String> array, String token) {
         String string = "";
-        for(int i = 0;i < array.size();i++)
-        {
+        for (String anArray : array) {
             try {
-                string += "&" + token + "[]=" + URLEncoder.encode(array.get(i), "UTF-8");
+                string += "&" + token + "[]=" + URLEncoder.encode(anArray, UTF8);
             } catch (UnsupportedEncodingException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+                LOGGER.info(e.getMessage());
             }
         }
 
@@ -523,37 +536,37 @@ public class Sendgrid {
     }
 
     /**
-     * _prepMessageData - Takes the mail message and returns a url friendly querystring
+     * prepMessageData - Takes the mail message and returns a url friendly querystring
      *
      * @return the data query string to be posted
-     * @throws JSONException 
+     * @throws JSONException
      */
-    protected Map<String, String> _prepMessageData() throws JSONException {
-        Map<String,String> params = new HashMap<String, String>();
+    protected Map<String, String> prepMessageData() throws JSONException {
+        Map<String, String> params = new HashMap<>();
 
         params.put("api_user", this.username);
         params.put("api_key", this.password);
         params.put("subject", this.getSubject());
-        if(this.getHtml() != null) {
+        if (this.getHtml() != null) {
             params.put("html", this.getHtml());
         }
-        if(this.getFromName() != null) {
+        if (this.getFromName() != null) {
             params.put("fromname", this.getFromName());
         }
-        params.put("text",this.getText());
+        params.put("text", this.getText());
         params.put("from", this.getFrom());
 
         if (this.getReplyTo() != null) {
             params.put("replyto", this.getReplyTo());
         }
 
-        if (this._useHeaders() == true) {
+        if (this.useHeaders()) {
             JSONObject headers = this.getHeaders();
             params.put("to", this.getFrom());
             JSONArray tos_json = new JSONArray(this.getTos());
             headers.put("to", tos_json);
             this.setHeaders(headers);
-            params.put("x-smtpapi", _escapeUnicode(this.getHeaders().toString()));
+            params.put("x-smtpapi", escapeUnicode(this.getHeaders().toString()));
         } else {
             params.put("to", this.getTos().toString());
             if (this.getToNames().size() > 0) {
@@ -565,74 +578,58 @@ public class Sendgrid {
     }
 
     /**
-     * Invoked when a warning is returned from the server that
-     * isn't critical
-     */
-    public static interface WarningListener {
-        public void warning(String serverResponse, Throwable t);
-    }
-
-    /**
      * send - Send an email
      *
      * @throws JSONException
      */
     public void send() throws JSONException {
-        send(new WarningListener() {
-            public void warning(String w, Throwable t) {
-                serverResponse = w;
-            }
-        });
+        send((w, t) -> serverResponse = w);
     }
 
     /**
      * send - Send an email
      *
-     * @param w callback that will receive warnings
+     * @param listener callback that will receive warnings
      * @throws JSONException
      */
-    public void send(WarningListener w) throws JSONException {
-        Map<String,String> data = new HashMap<String, String>();
-
-        data = this._prepMessageData();
-        StringBuffer requestParams = new StringBuffer();
-        Iterator<String> paramIterator = data.keySet().iterator();
-        while (paramIterator.hasNext()) {
-            final String key = paramIterator.next();
+    public void send(WarningListener listener) throws JSONException {
+        Map<String, String> data = this.prepMessageData();
+        StringBuilder requestParams = new StringBuilder();
+        for (String key : data.keySet()) {
             final String value = data.get(key);
             if (key.equals("to") && this.getTos().size() > 0) {
-                if (this._useHeaders() == true){
+                if (this.useHeaders()) {
                     try {
-                        requestParams.append("to=" + URLEncoder.encode(value, "UTF-8") + "&");
+                        requestParams.append("to=").append(URLEncoder.encode(value, UTF8)).append("&");
                     } catch (UnsupportedEncodingException e) {
                         e.printStackTrace();
                     }
-                } else{
-                    requestParams.append(this._arrayToUrlPart(this.getTos(), "to")+"&");
+                } else {
+                    requestParams.append(this.arrayToUrlPart(this.getTos(), "to")).append("&");
                 }
             } else {
                 if (key.equals("toname") && this.getToNames().size() > 0) {
-                    requestParams.append(this._arrayToUrlPart(this.getToNames(), "toname").substring(1)+"&");
+                    requestParams.append(this.arrayToUrlPart(this.getToNames(), "toname").substring(1)).append("&");
                 } else {
                     try {
-                        requestParams.append(URLEncoder.encode(key, "UTF-8"));
+                        requestParams.append(URLEncoder.encode(key, UTF8));
                     } catch (UnsupportedEncodingException e) {
-                        w.warning("Unsupported Encoding Exception", e);
+                        listener.warning("Unsupported Encoding Exception", e);
                     }
                     requestParams.append("=");
                     try {
-                        requestParams.append(URLEncoder.encode(value, "UTF-8"));
+                        requestParams.append(URLEncoder.encode(value, UTF8));
                     } catch (UnsupportedEncodingException e) {
-                        w.warning("Unsupported Encoding Exception", e);
+                        listener.warning("Unsupported Encoding Exception", e);
                     }
                     requestParams.append("&");
                 }
             }
         }
-        String request = this.domain + this.endpoint;
+        String request = DOMAIN + ENDPOINT;
 
-        if (this.getBccs().size() > 0){
-            request += "?" +this._arrayToUrlPart(this.getBccs(), "bcc").substring(1);
+        if (this.getBccs().size() > 0) {
+            request += "?" + this.arrayToUrlPart(this.getBccs(), "bcc").substring(1);
         }
         try {
             URL url = new URL(request);
@@ -649,7 +646,6 @@ public class Sendgrid {
             String line, response = "";
 
             while ((line = reader.readLine()) != null) {
-                // Process line...
                 response += line;
             }
             reader.close();
@@ -668,24 +664,23 @@ public class Sendgrid {
                     }
                     serverResponse += errorsObj.get(i);
                 }
-                w.warning(serverResponse, null);
+                listener.warning(serverResponse, null);
             }
         } catch (MalformedURLException e) {
-            w.warning("Malformed URL Exception", e);
+            listener.warning("Malformed URL Exception", e);
         } catch (IOException e) {
-            w.warning("IO Exception", e);
+            listener.warning("IO Exception", e);
         }
     }
 
     /**
-     * _addToName - Append an recipient name to the existing list of names
+     * addToName - Append an recipient name to the existing list of names
      *
-     * @param    email   Recipient email address
-     * @param    name    Recipient name
-     * @return           The SendGrid object.
+     * @param name  Recipient name
+     * @return The SendGrid object.
      */
-    private Sendgrid _addToName(String name) {
-        this.to_name_list.add(name);
+    private Sendgrid addToName(String name) {
+        this.toNames.add(name);
 
         return this;
     }
@@ -696,33 +691,20 @@ public class Sendgrid {
      * we actually don't want to. However, there are certain circumstances in
      * which we have to.
      */
-    private Boolean _useHeaders() {
-        if ((this._preferNotToUseHeaders() == true) && (this._isHeadersRequired() == false)) {
-            return false;
-        } else {
-            return true;
-        }
+    private boolean useHeaders() {
+        return (!(this.preferNotToUseHeaders() && !this.isHeadersRequired()));
     }
 
     /**
-     * _preferNotToUseHeaders - There are certain cases in which headers are not a preferred choice
+     * preferNotToUseHeaders - There are certain cases in which headers are not a preferred choice
      * to send email, as it limits some basic email functionality. Here, we
      * check for any of those rules, and add them in to decide whether or
      * not to use headers
      *
      * @return if true we don't
      */
-    private Boolean _preferNotToUseHeaders() {
-        if (this.getBccs().size() == 0)
-        {
-            return true;
-        }
-        if (this.use_headers != null && this.use_headers == false)
-        {
-            return true;
-        }
-
-        return false;
+    private Boolean preferNotToUseHeaders() {
+        return (this.getBccs().isEmpty() || !this.useHeaders);
     }
 
     /**
@@ -730,26 +712,22 @@ public class Sendgrid {
      *
      * @return if true headers are required
      */
-    private Boolean _isHeadersRequired() {
-        if (this.use_headers == true)
-        {
-            return true;
-        }
-
-        return false;
+    private boolean isHeadersRequired() {
+        return this.useHeaders;
     }
-    
-    private String _escapeUnicode(String input) {
+
+    private String escapeUnicode(String input) {
         StringBuilder sb = new StringBuilder();
         int len = input.length();
         for (int i = 0; i < len; i++) {
-          int code = Character.codePointAt(input, i);
-          if (code > 127) {
-            sb.append(String.format("\\u%x", code));
-          } else {
-            sb.append(String.format("%c", code));
-          }
+            int code = Character.codePointAt(input, i);
+            if (code > 127) {
+                sb.append(String.format("\\u%x", code));
+            } else {
+                sb.append(String.format("%c", code));
+            }
         }
         return sb.toString();
-      }
+    }
+
 }
