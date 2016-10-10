@@ -1,12 +1,14 @@
-# Sendgrid-google-java #
+Sendgrid-google-java
+---
 
 This library allows you to quickly and easily send emails from Google App Engine through SendGrid using Java.
  
-## License ##
+License
+---
 Licensed under the MIT License.
 
-## Downloading ##
-
+Downloading
+---
 Installing the SendGrid package is as simple as adding it to your project's include path.  If you're using git, you can just clone down the repo like this:
 
 ```
@@ -38,7 +40,7 @@ Before we begin using the library, its important to understand a few things abou
 To begin using this library, you must first include it
 
 ```java
-import packageName.Sendgrid;
+import com.sendgrid.google.Sendgrid;
 ```
 
 Then, initialize the SendGrid object with your SendGrid credentials
@@ -50,7 +52,7 @@ Sendgrid mail = new Sendgrid("<sendgrid_username>","<sendgrid_password>");
 Headers are enabled by default. If you do not want to use headers, the use_headers variable must be set to false
 
 ```java
-mail.use_headers = false;
+mail.setUseHeaders(false);
 ```
 
 Create a new SendGrid object and add your message details
